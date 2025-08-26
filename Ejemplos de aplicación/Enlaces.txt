@@ -1,0 +1,5 @@
+Repositorio de visualizaciones:
+- https://rpubs.com/CES_BCSF
+
+Monitor de IPC:
+-https://francisco-leiva.shinyapps.io/Monitor_IPC/
