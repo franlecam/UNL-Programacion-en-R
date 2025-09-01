@@ -8,6 +8,12 @@ EDAD  <-  c(60,54,18,27,32)
 
 class(BARRIOS)
 
+str(BARRIOS)
+
+library(skimr)
+skim(base)
+
+
 sum(EDAD)
 mean(EDAD)
 median(EDAD)
@@ -213,6 +219,21 @@ base_modif <- base_op %>%
          dia = weekdays(as.Date(Fecha))) %>%
   group_by(dia) %>%
   summarise(n = n())
+
+# ---- 8. Estructuras de datos en R ----
+## Diferencias entre data.frame, tibble, matrix, array y list
+
+### 📌 Introducción
+
+# En R existen distintas estructuras para almacenar y manipular datos. Es fundamental conocer sus diferencias para elegir la más apropiada según la tarea. Las más comunes son:
+#   
+#   - `data.frame`: estructura tabular base de R
+# - `tibble`: versión moderna de data.frame (tidyverse)
+# - `matrix`: tabla bidimensional de un solo tipo de dato
+# - `array`: generalización de matrix a múltiples dimensiones
+# - `list`: contenedor flexible de objetos de cualquier tipo
+  
+
 
 
 
