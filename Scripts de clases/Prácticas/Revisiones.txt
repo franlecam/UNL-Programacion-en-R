@@ -1,0 +1,13 @@
+En el presente archivo comparto algunas revisiones generales que vi de las prácticas:
+
+# Práctica del 08-25
+
+1. No crear objetos de la siguiente manera:
+
+"Today" <- Sys.Date()
+
+Directamente hacer:
+
+Today <- Sys.Date()
+
+Clave: evitar el uso de comillas para nombramiento de objetos.
