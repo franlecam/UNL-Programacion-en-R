@@ -1,0 +1,8 @@
+Estimados,
+
+Recuerden que deben enviar un script (.R) y no el workspace (.RData). El primero se genera como hemos visto en clases, el segundo se genera al pedirle a R que nos guarde el espacio de trabajo (los objetos creados en el environment), no lo hemos visto en clase.
+
+Notarán que es en efecto un script si, antes de enviarlo, hacen doble click en el archivo, les levanta Rstudio y los códigos con los que trabajaron (nada en el environment). Si, por el contrario, es un archivo .RData, al hacerle doble click se levantará R (no RStudio) sin sus códigos.
+
+
+
