@@ -1,0 +1,17 @@
+En este archivo encontrarán algunas redirecciones (links) hacia material escrito, por si prefieren tener este tipo de soporte de fondo. Mi sugerencia es que lo usen para repasar cuestiones que se vieron en clase, no para adelantar debido a que la materia tiene su propio cronograma.
+
+ESTE MATERIAL ES COMPLEMENTARIO
+
+- Ediciones EPH en R. https://diegokoz.github.io/Curso_R_EPH_clases/
+
+Este es un excelente portal con el que me inicié a R, noten que trabajan de fondo con la base de datos de la EPH, por lo que si no están acostumbrados a la misma pueden (a) failiarizarse con ella o bien (b) elegir otra opción entre las que dejo a continuación.
+
+- Estadística para contadores y auditores con R
+
+Encontré este portal https://dspace.ups.edu.ec/handle/123456789/18100 donde más abajo pueden encontrar (y descargar) el pdf "Estadistica para contadores y auditores con R.pdf". Me pareció un soporte escrito interesante para quienes no estén familiarizados con la estadística. Realiza un catch up de la misma de la mano de R (¡¿qué mejor?!).
+
+- R para principiantes
+
+Acá pueden encontrar un blog como material escrito: https://bookdown.org/jboscomendoza/r-principiantes4/
+
+--> Hay muchas (y de verdad, muchas) otras opciones que pueden explorar, mi recomendación 
