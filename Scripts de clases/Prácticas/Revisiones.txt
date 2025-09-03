@@ -1,6 +1,6 @@
 En el presente archivo comparto algunas revisiones generales que vi de las prácticas:
 
-# Práctica del 08-25
+# Particulares:
 
 1. No crear objetos de la siguiente manera:
 
@@ -11,3 +11,46 @@ Directamente hacer:
 Today <- Sys.Date()
 
 Clave: evitar el uso de comillas para nombramiento de objetos.
+
+2. Cosas que se pueden hacer más fácilmente:
+
+- En vez de
+
+ names(df)[names(df) == "Precio_Unitario"] <- "PrecioUnit"  
+
+hacer
+
+names(df)[i] <- "PrecioUnit" (reemplazar en i el lugar que ocupa la variable "Precio_Unitario"
+
+3. # no supe como consultar la clase de A y B juntos#
+
+Si la duda apuntaba a si se puede consultar dos objetos a la vez, no se puede: class() admite sólo un argumento.
+
+Lo más cercano podría ser una lapply(x, class).
+
+# Generales: 
+
+1. A veces más es menos.
+
+Me gustó que en algunos casos hallan descripto las líneas de código. Tener en cuenta para próximas ocasiones (y en general para sus trabajos), hay que intentar er lo más parsimonioso posible.
+
+2. Ser crítico con los nombramientos.
+
+En general pusieron buenos nombres para objetos, pero en algunos casos usaron nombres un poco largos.
+
+3. espaciar los códigos.
+
+Sugiero dejar una línea en blanco entre código y código, o bien dejar junto aquellos que tengan sentido.
+
+Mismo comentario para espaciar entre comas... o cuando se define con =... por ejemplo:
+
+esto <- "si"
+esto<-"no"
+
+o bien
+
+seq(1930, 2024, by = 4)
+
+Para gustos, colores... pero puede ser mejor laburar así.
+
+
