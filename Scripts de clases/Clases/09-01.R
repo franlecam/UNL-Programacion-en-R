@@ -167,7 +167,7 @@ head(base_op,10)
 
 set.seed(121822)
 
-base_pruebas <- dplyr::sample_n(base_op, 50000) # Pregunta: siempre nos va a servir esto? 
+base_pruebas <- dplyr::sample_n(base_op, 50000) # Pregunta: siempre nos va a servir esto?
 
 # vamos a comprobarlo:
 
@@ -179,61 +179,4 @@ sapply(base_op[sapply(base_op, is.numeric)==T], mean)
 
 options(scipen = 999, digits = 4)
 
-# como hago para conocer la fecha promedio? 
-
-# respuesta ####
-as.Date(mean(as.numeric(as.Date(base_op$created_on))))
-
-as.Date(mean(as.numeric(as.Date(base_op$created_on))), origin = "1970-01-01")
-as.Date(median(as.numeric(as.Date(base_op$created_on))), origin = "1970-01-01")
-#####
-
-# existen otras formas de hacer lo mismo...
-
-## Funciones interesantes ####
-
-# Select
-
-# group_by
-
-# mutate
-
-# rename 
-
-# summarise | summarize
-
-
-
-tabla <- table(as.Date(base_op$Fecha)) 
-  mutate(dia = weekdays(as.Date(Var1)))
-
-View(tabla)
-
-# quizá sería más interesante ver por mes... o por año...
-
-library(tidyverse)
-
-base_modif <- base_op %>%
-  mutate(año = year(as.Date(Fecha)),
-         mes = month(as.Date(Fecha)),
-         dia = weekdays(as.Date(Fecha))) %>%
-  group_by(dia) %>%
-  summarise(n = n())
-
-# ---- 8. Estructuras de datos en R ----
-## Diferencias entre data.frame, tibble, matrix, array y list
-
-### 📌 Introducción
-
-# En R existen distintas estructuras para almacenar y manipular datos. Es fundamental conocer sus diferencias para elegir la más apropiada según la tarea. Las más comunes son:
-#   
-#   - `data.frame`: estructura tabular base de R
-# - `tibble`: versión moderna de data.frame (tidyverse)
-# - `matrix`: tabla bidimensional de un solo tipo de dato
-# - `array`: generalización de matrix a múltiples dimensiones
-# - `list`: contenedor flexible de objetos de cualquier tipo
   
-
-
-
-
