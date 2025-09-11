@@ -53,4 +53,10 @@ seq(1930, 2024, by = 4)
 
 Para gustos, colores... pero puede ser mejor laburar así.
 
+4. Recordar que usan SAMPLE
+
+En la mayoría de los casos expresaron cuánto les daba el resultado, pero usaron función sample previamente. Recuerden que si no ponen una semilla (set.seed()), los resultados de ustedes serán iferentes cada vez que se corra el código (producto del azar...).
+
+
+
 

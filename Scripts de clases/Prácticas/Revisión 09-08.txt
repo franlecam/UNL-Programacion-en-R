@@ -1,0 +1,6 @@
+Generales:
+
+1) Recomiendo no mantener en el código install.packages()... piensen que este código lo comparten y quizá la otra persona sí tiene cargado el paquete, lo que podría entorpecer la corrida del codigo.
+Dos recomendaciones:
+- Dejarlo como comentario # install.packages() --> Si no tengo el paquete, tengo a mano el código quitando el #
+- No mostrar install.packages()
