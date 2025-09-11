@@ -6,3 +6,6 @@ Notarán que es en efecto un script si, antes de enviarlo, hacen doble click en 
 
 
 
+ENTREGAR TPS DE LA SIGUIENTE MANERA:
+
+Apellido_nºpráctica, por ejemplo: Leiva_3
