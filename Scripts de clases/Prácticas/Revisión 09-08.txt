@@ -1,0 +1,33 @@
+Generales:
+
+1) Recomiendo no mantener en el código install.packages()... piensen que este código lo comparten y quizá la otra persona sí tiene cargado el paquete, lo que podría entorpecer la corrida del codigo.
+Dos recomendaciones:
+- Dejarlo como comentario # install.packages() --> Si no tengo el paquete, tengo a mano el código quitando el #
+- No mostrar install.packages()
+
+2) En algunos casos, no cargaron el paquete, por lo que el código no corrió (sin que yo cargase el paquete). Lo ideal es que mencionen el código que carga el paquete o bien usar la alternativa paquete::función.
+
+
+Particulares:
+
+1) Optimización de caso:
+
+---
+Hiciste:
+---
+
+airquality<-rename(airquality, Temperatura= Temp)
+
+airquality<-rename(airquality, 
+                   Radiacion = Solar.R)
+airquality<-rename(airquality, Viento = Wind)
+
+---
+Pudiste haber hecho:
+---
+
+airquality <- airquality %>%
+	rename(Temperatura = Temp,
+	Radiacion = Solar.R,
+	Viento = Wind)
+

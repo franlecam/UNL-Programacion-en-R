@@ -1,0 +1,31 @@
+En el presente archivo comparto algunas revisiones generales que vi de las prácticas de la cuarta entrega.
+
+- Generales
+
+1) Si estamos trabajando datos expresados en farenheit y el laburo es para Argentina (u otro lugar donde se utilice Celsius), correspondería hacer una transformación, para que sea más fácil la lectura del usuario.
+
+2) Desaconsejo que para la elaboración de gráficos se nombren varios objetos. Al momento de trabajar, vamos a ver que nuestro environment está lleno de objetos "innecesarios". Una opción puede ser, sí, construirlos y debajo del código asociado al gráfico que construyamos, eliminar los objetos "intermedios" o necesarios SOLO para el gráfico.
+
+A quienes hayan elaborado muchos objetos intermedios, los aliento a volver a correr el código y mirar su environment... encontrarán que está lleno de objetos "innecesarios". Cuanto antes podamos acostumbrarlos a la prolijidad en la escritura de código, más fácil será en el futuro trabajar de manera cooperativa.
+
+3) Algunos gráficos son poco intuitivos o carecen de sentido. Recomiendo tenerlo presente ya que un gráfico debe resumir información y ser práctico: rápidamente uno tiene que saber interpretarlo (estamos suponiendo, claramente, que sabemos lo que vemos, espero se entienda el punto).
+
+4) No usar acentos ni caracteres especiales en el script, puede pasar esto:
+
+#Esta representaci?n permiti? comparar los promedios mensuales de ozono y detectar en qu? per?odos se registraron los valores m?s altos.El gr?fico de barras muestra un aumento progresivo de la temperatura desde los primeros meses (mayo y junio) hacia julio y agosto, donde se observan los valores promedio m?s altos. Posteriormente, en septiembre, la temperatura comienza a descender nuevamente.
+
+Consideraciones que pudieron haber notado:
+
+1) Size como atributo fue dejado en desuso, sin embargo algunos paquetes y chat gpt siguen recomendando su utilización. Hubiera sido mejor que utilicen, tal como R lo indica al correr el código "linewidth".
+
+2) en algunos casos, al realizar el gráfico de dispersión con línea de regresión, les quitaba filas... ¿Por qué sucede esto?
+
+3) Algunos lo hicieron, pero hubiera estado bueno que interpreten brevemente qué se estaba mostrando en el gráfico.
+
+- Para próximas entregas:
+
+1) enviar nombrando el archivo de la siguiente forma: "Apellido_nºentrega.R" (Leiva_6.R)
+
+2) Dentro del archivo sólo debe existir código asociado a dicha entrega, y no anteriores
+
+3) Enviar por mail con asunto Programación FCE - apellido Nº entrega (ejemplo, Programación FCE - Leiva Nº6) y sólo la entrega solicitada (no hacer cadena de mails).
