@@ -7,6 +7,21 @@ Dos recomendaciones:
 
 2) En algunos casos, no cargaron el paquete, por lo que el código no corrió (sin que yo cargase el paquete). Lo ideal es que mencionen el código que carga el paquete o bien usar la alternativa paquete::función.
 
+3) observo en algunos casos nombramiento de varialbes (columnas de un data frame, por ejemplo) de la siguiente forma:
+
+airquality_mod <- airquality %>%
+  rename(
+    ozono = Ozone,
+    solar = Solar.R,
+    viento = Wind,
+    temp = Temp,
+    mes = Month,
+    dia = Day
+  )
+
+Desaconsejo el punto como separador, no lo suelo ver nunca como nomre de variable. Recomiendo en su lugar guión bajo (_).
+
+
 Particulares:
 
 1) Optimización de caso:
