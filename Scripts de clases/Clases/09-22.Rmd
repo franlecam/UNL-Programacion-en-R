@@ -1,0 +1,73 @@
+---
+title: "Análisis de Ventas Mensuales"
+author: "Mercedes"
+date: "2025-09-22"
+output: html_document
+---
+
+## Introducción
+
+Este análisis muestra diversos gráficos relacionados con las ventas mensuales de una empresa entre los meses de enero y junio. Se exploran diferentes tipos de visualizaciones, como gráficos de líneas, barras y torta, con el objetivo de entender el comportamiento de las ventas a lo largo del tiempo y por producto.
+
+### 1. Gráfico de Líneas de Ventas Mensuales
+
+Este gráfico muestra la evolución de las ventas mensuales de la empresa, con una línea que conecta los puntos de venta por cada mes.
+
+```{r line_plot, echo=FALSE}
+library(ggplot2)
+
+datos <- data.frame(
+  mes = c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio"),
+  ventas = c(150, 180, 220, 200, 250, 300),
+  producto = c("A", "B", "A", "B", "A", "B")
+)
+
+datos$mes <- factor(datos$mes, levels = c("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio"))
+
+ggplot(datos, aes(x = mes, y = ventas, group = 1)) +
+  geom_line(color = "blue", linewidth = 1.2) +
+  geom_point(color = "red", size  = 5) +
+  labs(
+    title = "Ventas mensuales de la empresa",
+    subtitle = "De enero a junio",
+    x = "Mes",
+    y = "Ventas (en miles de $)"
+  ) +
+  theme_minimal()
+```
+
+
+### 2. Gráfico de Barras de Ventas Mensuales
+
+```{r bar_plot, echo=FALSE}
+
+ggplot(datos, aes(x = mes, y = ventas)) +
+  geom_col(fill = "steelblue") + 
+  labs(
+    title = "Ventas Mensuales de la Empresa",
+    subtitle = "Grafico de barras",
+    x = "Mes",
+    y = "Ventas (en miles de $)"
+  ) +
+  theme_minimal()
+
+```
+
+### 3. Gráfico de Torta de Proporción de las Ventas, según mes
+
+```{r pie_chart, echo=FALSE}
+
+ggplot(datos, aes(x = "", y = ventas, fill = mes)) +
+  geom_col(width = 1) +  
+  coord_polar(theta = "y") + 
+  labs(
+    title = "Proporcion de Ventas por Mes",
+    fill = "Mes" 
+  ) +
+  theme_void() + 
+  theme(plot.title = element_text(hjust = 0.5)) 
+
+```
+
+
+
