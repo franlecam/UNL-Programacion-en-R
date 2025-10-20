@@ -1,3 +1,0 @@
-- Revisar gráficos de correcciones
-- Quien así lo deseé, al final de la clase revisamos x entrega suya para ver qué puede mejorar.
-- Mirar las correcciones de la entrega de rmarkdown
