@@ -1,0 +1,302 @@
+---
+title: "Mapas interactivos con Leaflet: Terminales SUBE"
+subtitle: "Ejemplo de mapa"
+author: "Francisco Leiva"
+date: "`r format(Sys.Date())`"
+output:
+  html_document:
+    theme: cosmo
+    toc: true
+    toc_float: true
+    df_print: paged
+---
+
+```{r options}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+```
+
+```{r paquetes, echo = F, message = F}
+library(sf)
+library(leaflet)
+library(tidyverse)
+```
+
+# 1. Datos y preparación
+## 1.1 Lectura del shapefile
+
+```{r exploracion}
+
+ruta <- "SUBE_terminales_autoservicio_activas_2019-10-01.shp"
+
+sube_raw <- st_read(ruta, quiet = TRUE) # Lectura del shapefile con sf (quiet = TRUE evita mensajes en consola)
+
+st_crs(sube_raw) # Verificar el sistema de referencia de coordenadas (CRS)
+
+# Verificar el tipo de geometría (por ejemplo: POINT, POLYGON, etc.)
+st_geometry_type(sube_raw)[1]
+
+head(sube_raw[, c("Latitud", "Longitud")]) # Inspeccionar las primeras filas de las columnas de latitud y longitud
+
+```
+
+## 1.2 Normalización y geometría correcta
+
+```{r}
+# 1) quitar geometría defectuosa
+
+sube_tab <- st_drop_geometry(sube_raw)
+
+# Antes: sube_raw tiene coordenadas y atributos (es espacial).
+
+# Después: sube_tab es una tabla común, sin información espacial.
+
+# 2) forzar numéricas y limpiar encoding de textos
+
+sube_tab <- sube_tab |>
+  mutate(
+    # Convertir a numéricas las coordenadas
+    Latitud  = as.numeric(Latitud),
+    Longitud = as.numeric(Longitud),
+    across(where(is.character), ~ iconv(.x, from = "latin1", to = "UTF-8")) # Arreglar encoding de variables de texto
+  )
+
+# Limpiar textos con problemas de acentos
+
+cols_chr <- names(sube_tab)[vapply(sube_tab, is.character, logical(1))]
+sube_tab[cols_chr] <- lapply(sube_tab[cols_chr], function(x) {
+out <- iconv(x, from = "", to = "UTF-8")
+ifelse(is.na(out), x, out)
+})
+
+# 3) crear sf en WGS84
+
+sube <- st_as_sf(
+  sube_tab,                 # la tabla base, sin geometría
+  coords = c("Longitud", "Latitud"),  # columnas que contienen las coordenadas (x = lon, y = lat)
+  crs = 4326                # sistema de referencia de coordenadas WGS84 | Es el que usan la mayoría de mapas web (Google Maps, Leaflet, OpenStreetMap, etc.) | World Geodetic System
+)
+
+# Bounding box para ver si “cae” en Argentina
+
+st_bbox(sube)
+
+```
+
+# 2. Mapa base rápido
+
+```{r}
+sube$id <- seq_len(nrow(sube))
+
+leaflet(sube) |>                                  # Crea un mapa interactivo usando el objeto 'sube' (clase sf con coordenadas)
+  addProviderTiles("CartoDB.Positron") |>          # Agrega un mapa base claro y limpio (proveedor CartoDB)
+  addCircleMarkers(                               # Dibuja los puntos como círculos
+    radius = 3,                                   # Tamaño de los círculos
+    stroke = FALSE,                               # Sin borde alrededor del círculo
+    fillOpacity = 0.8,                            # Transparencia del relleno (0 = transparente, 1 = opaco)
+    popup = ~paste0("ID: ", id),                   # Texto emergente (popup) al hacer clic en cada punto
+    fillColor = "steelblue"   # color de relleno (interior del círculo)
+  )
+
+
+```
+
+# 3. Popups ricos (HTML) y marker clustering
+
+Creamos un popup con varios campos y activamos clusters.
+
+```{r}
+popup_html <- paste0(
+  "<b>Entidad:</b> ", sube$Entidad, "<br/>",
+  "<b>Tipo de Centro:</b> ", sube$Tipo.de.Ce, "<br/>",
+  "<b>Tipo de Ubicación:</b> ", sube$Tipo.Ubica, "<br/>",
+  "<b>Dirección:</b> ", sube$Direcci., " ", sube$N.mero, "<br/>",
+  "<b>Localidad:</b> ", sube$Localidad, " (", sube$Provincia, ")<br/>",
+  "<b>Partido/Depto:</b> ", sube$Partido
+)
+
+leaflet(sube) |>                                      # Crea un mapa interactivo a partir del objeto 'sube' (sf con coordenadas)
+  addProviderTiles("CartoDB.Positron") |>              # Agrega un mapa base claro y minimalista
+  addCircleMarkers(                                   # Dibuja los puntos como círculos
+    radius = 4,                                       # Tamaño del círculo
+    stroke = FALSE,                                   # Sin borde alrededor del círculo
+    fillOpacity = 0.85,                               # Nivel de opacidad del relleno (0 = transparente, 1 = opaco)
+    popup = popup_html,                               # Texto o HTML que aparece al hacer clic en cada punto
+    clusterOptions = markerClusterOptions()            # Activa el agrupamiento automático (clusters) de puntos cercanos
+  )
+
+
+```
+
+# 4. Colorear por atributo (categoría)
+
+Coloreamos por Tipo.Ubica (Estación de Tren, Universidad, Ente Público, etc.)
+
+```{r}
+# paleta discreta
+
+tipos <- sort(unique(sube$Tipo.Ubica))
+pal   <- colorFactor(colorFactor("Set1", domain = tipos)(tipos), domain = tipos)
+
+leaflet(sube) |>
+  addProviderTiles("CartoDB.Voyager") |>
+  addCircleMarkers(
+    radius = 5, stroke = FALSE, fillOpacity = 0.9,
+    color = ~pal(Tipo.Ubica),
+    popup = popup_html
+    ) |>
+  addLegend("bottomright", pal = pal, values = ~Tipo.Ubica, title = "Tipo de Ubicación")
+
+```
+
+## Otra opción
+
+```{r}
+unique(tipos)
+table(sube$Tipo.Ubica)
+
+library(tidyverse)
+
+```
+
+```{r}
+
+sube_grp <- sube |>
+  mutate(
+    # arregla "Estaci�n" -> "Estación", etc.
+    Tipo.Ubica = iconv(Tipo.Ubica, from = "latin1", to = "UTF-8"),
+
+    Tipo_grupo = case_when(
+      Tipo.Ubica %in% c("Aeropuerto", "Parada de Colec", "Estación de Tren") ~ "Transporte",
+      Tipo.Ubica %in% c("Centro de Salud")                                   ~ "Salud",
+      Tipo.Ubica %in% c("Universidad")                                       ~ "Educación",
+      Tipo.Ubica %in% c("Suc. Bancaria", "Centro de Pago")                    ~ "Servicios financieros",
+      Tipo.Ubica %in% c("Shopping Center", "Centro Sube")                     ~ "Centros SUBE / Shopping",
+      Tipo.Ubica %in% c("Delegación Municipal", "Ente Público")               ~ "Gobierno / Público",
+      Tipo.Ubica %in% c("Supermercado", "Almacen/Autoserv", "Kiosco", "Comercio", "Est. de Serv.") ~ "Comercio / Servicios",
+      Tipo.Ubica %in% c("Empresa", "Age. De Lote")                            ~ "Empresas / Productores",
+      Tipo.Ubica %in% c("Otros")                                              ~ "Otros establecimientos",
+      TRUE                                                                    ~ "Instituciones / Varios"
+    ),
+    # opcional: forzar un orden de leyenda
+    Tipo_grupo = fct_relevel(
+      as.factor(Tipo_grupo),
+      "Transporte","Gobierno / Público","Salud","Educación",
+      "Servicios financieros","Comercio / Servicios",
+      "Centros SUBE / Shopping","Empresa","Otros"
+    )
+  )
+
+table(sube_grp$Tipo_grupo)
+
+```
+
+```{r}
+
+pal_grp <- colorFactor("Set2", domain = levels(sube_grp$Tipo_grupo))
+
+leaflet(sube_grp) |>
+  addProviderTiles("CartoDB.Positron") |>
+  addCircleMarkers(
+    radius = 5, stroke = FALSE, fillOpacity = 0.9,
+    fillColor = ~pal_grp(Tipo_grupo),
+    popup = ~paste0(
+      "<b>", Ubicaci., "</b><br/>",
+      "Grupo: ", Tipo_grupo, "<br/>",
+      "Tipo: ", Tipo.Ubica, "<br/>",
+      Localidad, " (", Provincia, ")"
+    ),
+    group = ~as.character(Tipo_grupo)
+  ) |>
+  addLayersControl(
+    overlayGroups = levels(sube_grp$Tipo_grupo),
+    options = layersControlOptions(collapsed = FALSE)
+  ) |>
+  addLegend("bottomright", pal = pal_grp, values = ~Tipo_grupo,
+            title = "Grupo de ubicación")
+
+
+```
+
+# 5. Filtros geográficos (Provincia / Localidad)
+## 5.1 Filtrar por provincia (ej: CABA vs BA)
+
+```{r}
+# caba <- dplyr::filter(sube, Provincia == "CABA")
+caba <- dplyr::filter(sube, Localidad == "CIUDAD AUTONOMA BUENOS AIRES")
+ba   <- dplyr::filter(sube, Provincia == "BA")
+sf <- dplyr::filter(sube, Provincia == "SF")
+
+leaflet() |>
+  addProviderTiles("CartoDB.Positron") |>
+  addCircleMarkers(data = caba, radius = 5, fillOpacity = 0.9,
+                            color = "#1f77b4", popup = popup_html, group = "CABA") |>
+  addCircleMarkers(data = ba, radius = 5, fillOpacity = 0.9,
+                            color = "#ff7f0e", popup = popup_html, group = "Bs. As.") |>
+  addCircleMarkers(data = sf, radius = 5, fillOpacity = 0.9,
+                            color = "darkred", popup = popup_html, group = "Santa Fe") |>
+  addLayersControl(
+    overlayGroups = c("CABA", "Bs. As.", "Santa Fe"),
+    options = layersControlOptions(collapsed = FALSE)
+    ) |>
+  fitBounds(
+  lng1 = -61.5, lat1 = -38,   # más al sur y al oeste
+  lng2 = -57,   lat2 = -30    # más al norte
+)
+# fitBounds(
+#   lng1 = min(sube$Longitud, na.rm = TRUE),
+#   lat1 = min(sube$Latitud,  na.rm = TRUE),
+#   lng2 = max(sube$Longitud, na.rm = TRUE),
+#   lat2 = max(sube$Latitud,  na.rm = TRUE)
+# )
+
+```
+
+## 5.2 Filtrar por localidad (ej: ROSARIO, CÓRDOBA, MENDOZA)
+
+```{r}
+locs <- c("ROSARIO", "SANTA FE", "RAFAELA")
+sel  <- dplyr::filter(sube, Localidad %in% locs)
+
+leaflet(sel) |>
+  addProviderTiles("CartoDB.Positron") |>
+  addCircleMarkers(radius = 6, stroke = TRUE, weight = 1,
+                   popup = popup_html) |>
+  addMiniMap(tiles = "CartoDB.Positron", toggleDisplay = TRUE)
+
+```
+
+# 6. Capas por modalidad (Pos Pago, etc.) y control de visibilidad
+
+```{r}
+table(sube$Modalidad)
+```
+
+```{r}
+# Crear vector de modalidades sin NAs
+modalidades <- unique(na.omit(sube$Modalidad))
+
+mapa <- leaflet() |>
+  addProviderTiles("CartoDB.Positron")
+
+for (m in modalidades) {
+  capa <- dplyr::filter(sube, Modalidad == m)
+  mapa <- mapa |>
+    addCircleMarkers(
+      data = capa,
+      radius = 5,
+      fillOpacity = 0.9,
+      stroke = FALSE,
+      popup = popup_html,
+      group = m
+    )
+}
+
+mapa |>
+  addLayersControl(
+    overlayGroups = modalidades,
+    options = layersControlOptions(collapsed = FALSE)
+  )
+
+```
+
