@@ -13,6 +13,8 @@
 
 ## el segundo debe ser un mapa de polígonos (o áreas)
 
+# La única regla de esta consigna es no usar los datos de sube vistos en clase (aunque pueden ayudarse con el código)
+
 ## Consigna 2: elborar un dashboard (cantidad de solapas que deseen) cuyo contenido sean consginas de clases previas (tablas, gráficos estáticos, gráficos dinámicos o mapas).
 
 ## No hay un contenido mínimo, pero se sugiere que intenten explorar el dashboard todo lo que necesiten.
