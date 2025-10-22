@@ -2,7 +2,9 @@
 
 # Más ejemplos en
 
-https://rstudio.github.io/flexdashboard/articles/examples.html
+# https://rstudio.github.io/flexdashboard/articles/examples.html
+
+# LOS SIGUIENTES CÓDIGOS DEBEN SER PEGADOS EN UN RMARKDOWN
 
 # DASHBOARD 1 ####
 
