@@ -16,15 +16,19 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 
 ```
 
-```{r paquetes, echo = F, message = F}
+```{r paquetes, echo = F, message = F, warning=FALSE}
 library(sf)
 library(leaflet)
 library(tidyverse)
 ```
 
 # 1. Datos y preparación
+
 ## 1.1 Lectura del shapefile
 
+### tercer orden
+
+#### etc 
 ```{r exploracion}
 
 ruta <- "SUBE_terminales_autoservicio_activas_2019-10-01.shp"
@@ -85,7 +89,7 @@ st_bbox(sube)
 
 # 2. Mapa base rápido
 
-```{r}
+```{r, echo = F, message = F, warning=FALSE}
 sube$id <- seq_len(nrow(sube))
 
 leaflet(sube) |>                                  # Crea un mapa interactivo usando el objeto 'sube' (clase sf con coordenadas)
