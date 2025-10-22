@@ -1,0 +1,8 @@
+- Web scraping
+- Modelización de datos
+- Strings
+
+# funciones:
+
+- join (left, inner, right, outer)
+- pivot
