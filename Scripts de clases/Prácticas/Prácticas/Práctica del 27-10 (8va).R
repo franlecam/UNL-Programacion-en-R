@@ -2,7 +2,7 @@
 ##* *Práctica de pivote, join  y strings  | Semana 27-10*
 #----------------------------------------------------------------
 
-#* *Fecha límite de entrega: Domingo 02 de noviembre 23:59hs *
+#* *Fecha límite de entrega: Miércoles 05 de noviembre 23:59hs *
 
 ##* Para esta práctica, *continúen trabajando con la base de datos que eligieron* y exploraron en las prácticas anteriores. 
 
