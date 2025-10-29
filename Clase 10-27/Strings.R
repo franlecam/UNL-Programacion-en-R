@@ -11,25 +11,29 @@ texto <- c("Exportaciones crecieron 15%",
            "El tipo de cambio se mantiene estable",
            "Las exportaciones industriales aumentaron 20% en agosto")
 
+data <- data.frame(texto)
+
+str_detect(data, "Las exportaciones")
+
 # Buscar si aparece una palabra específica
-str_detect(texto, "recaudación")
+str_detect(texto, "Las exportaciones")
 
 # Filtrar frases que contienen cierta palabra
-texto[str_detect(texto, "Export")]
+texto[str_detect(texto, "export")]
 
 # Buscar expresiones usando patrones (regex)
 # Ejemplo: detectar si hay un número en la frase
+
 str_detect(texto, "\\d+")
 
 # Detectar frases que mencionen "exportaciones" o "importaciones"
-str_detect(texto, "exportaciones|importaciones")
+str_detect(texto, "exportaciones | aumentaron")
 
 # Contar cuántas frases contienen la palabra “exportaciones”
 sum(str_detect(str_to_lower(texto), "exportaciones"))
 
 # Ejemplo útil en informes: detectar menciones de provincias
 str_detect(texto, regex("santa fe|tierra del fuego|chaco", ignore_case = TRUE))
-
 
 ## 2) REEMPLAZO DE PATRONES ####
 # Se usa para limpiar o normalizar textos: corregir errores, uniformar expresiones, etc.
@@ -41,7 +45,8 @@ str_replace(texto, "Caída", "Descenso")
 str_replace_all(texto, " ", "_")  # reemplaza espacios por guiones bajos
 
 # Normalizar nombres o expresiones
-texto2 <- c("SANTA FE", "Sta. Fe", "Santa fe", "santa-fé")
+texto2 <- c("SANTA FE", "Sta. Fe", "Santa fe", "santa-fé", "santa-fé")
+
 str_replace_all(texto2, regex("sta.?\\s?fe", ignore_case = TRUE), "Santa Fe")
 
 # Reemplazar varios patrones a la vez

@@ -1,10 +1,14 @@
+options(scipen = 999)
+
 library(dplyr)
+
+library(readxl)
 
 # FUNCIONES DE UNIÓN Y PIVOTEO ####
 
 ## TRAYENDO EJEMPLO####
 
-a <- readxl::read_excel("expo.xlsx",
+a <- read_excel("expo.xlsx",
                    sheet = "2024",
                    range = "a9:b571",
                    col_names = F)
@@ -26,13 +30,24 @@ d <-  readxl::read_excel("expo.xlsx",
 
 ### FUNCIONES EN R ####
 
+?sum()
+
+a[[1]]
+
 ajustar_base <- function(df, col, col2) {
+  
   df[[col]] <- as.character(df[[col]])
+  
   df[[col]] <- stringr::str_pad(df[[col]], width = 8, pad = "0")
+  
   df[[col2]] <- gsub("-", "0", df[[col2]])   # reemplaza '-' por '0'
+  
   df[[col2]] <- as.numeric(df[[col2]])       # convierte a numérico
+  
   names(df)[c(col, col2)] <- c("NCM", "valor")  # renombra las columnas
+  
   return(df)
+  
 }
 
 
@@ -51,12 +66,14 @@ rm(a, b, c, d, ajustar_base)
 
 ## UNIONES POR FILA: rbind() y bind_rows() ####
 
+library(tidyverse)
+
 a_fix$periodo <- "2024"
 b_fix$periodo <- "2023"
 c_fix$periodo <- "2022"
 d_fix$periodo <- "2021"
 
-union1 <- dplyr::bind_rows(a_fix, b_fix, c_fix, d_fix)
+union1 <- bind_rows(a_fix, b_fix, c_fix, d_fix)
 
 #### por qué evitar rbind() 
 
@@ -201,6 +218,7 @@ d_sel <- d_fix[, c("NCM", "valor")]
 # y completa con los valores de la base derecha (por ejemplo, 2023) cuando el NCM coincide.
 # Si no existe en 2023, deja NA.
 
+?left_join
 left <- dplyr::left_join(a_sel, b_sel, by = "NCM")
 
 left <- dplyr::left_join(a_sel, b_sel, by = "NCM",
@@ -231,6 +249,7 @@ inner <- dplyr::inner_join(a_sel, b_sel, by = "NCM", suffix = c("_2024", "_2023"
 ### 4) OUTER JOIN (FULL JOIN) ####
 # A veces se habla de “outer join” para referirse a las uniones que conservan
 # todas las observaciones, de ambos lados.
+
 # En R, eso se implementa directamente con full_join().
 
 full <- dplyr::full_join(a_sel, b_sel, by = "NCM", suffix = c("_2024", "_2023"))
