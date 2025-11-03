@@ -1,0 +1,741 @@
+---
+title: "Web scraping"
+output: html_document
+date: ""
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Paquetes necesarios
+
+```{r paquetes, message=FALSE, warning=FALSE}
+library(tidyverse) # para manipular datos
+library(rvest)     # permite realizar web scraping
+library(polite)    # verificación de robots.txt para web scraping
+library(lubridate) # tabajar con datos tipo fecha
+library(wordcloud) # Crear nubes de palabras
+library(tidytext)  # Manejo de datos tipo texto 
+library(tm)        # Manejo de texto StopWords
+library(jcolors)   # Configuración de colores
+```
+
+# EL LITORAL
+## Web
+
+El siguiente ejemplo muestra cómo obtener los títulos principales de la portada del diario El Litoral mediante web scraping con R.
+
+Usamos las librerías `polite` y `rvest`, que permiten respetar las reglas del sitio web y extraer información del HTML de forma estructurada.
+
+Antes de “raspar” una página web, es importante comprobar si el sitio permite la automatización de consultas.
+
+Esto se hace leyendo su archivo robots.txt, donde cada sitio declara sus propias reglas para bots o scrapers.
+
+En R, la función `bow()` del paquete polite automatiza este paso y nos da un resumen legible. La afunción `bow()` (del inglés hacer una reverencia) “saluda” al sitio web y devuelve un objeto de clase polite session que contiene metadatos sobre las reglas del dominio.
+
+En la consola, suele aparecer una salida como esta:
+
+```{r carga web - EL}
+
+# 1. Declarar la URL y revisar si el sitio es accesible
+url <- "https://www.ellitoral.com/"
+url %>% bow()
+
+# <polite session> https://www.ellitoral.com/
+#     User-agent: polite R package
+#     robots.txt: 12 rules are defined for 10 bots
+#    Crawl delay: 5 sec
+#   The path is scrapable for this user-agent
+
+```
+
+En este caso:
+
+- User-agent: el identificador que R utiliza al conectarse (por defecto, "polite R package").
+Sirve para que el servidor sepa que la consulta proviene de un script legítimo y no de un bot agresivo.
+
+- robots.txt: número de reglas detectadas en el archivo del sitio (por ejemplo, qué carpetas están permitidas o prohibidas).
+
+- Crawl delay: tiempo mínimo (en segundos) que debería pasar entre cada descarga.
+En este caso, 5 sec significa que, si hicieras scraping de múltiples páginas del sitio, deberías esperar 5 segundos entre cada solicitud.
+
+- Path is scrapable: indica que la URL actual (https://www.ellitoral.com/) sí está permitida para el User-agent que usás.
+
+## Leemos la página web
+
+Una vez verificado que el sitio permite ser explorado, el siguiente p
+aso consiste en descargar el contenido de la página para poder analizarlo.
+
+Esto se hace con la función read_html() del paquete rvest, que toma la URL como argumento y devuelve un objeto de tipo documento XML (una representación estructurada del código HTML).
+
+```{r leyendo web - EL}
+
+html <- read_html(url)
+html
+```
+
+## Exploración del contenido HTML
+
+El objeto `html` contiene todo el código de la página, incluyendo las etiquetas que estructuran su contenido.  
+Para identificar qué partes del sitio nos interesan, conviene examinar las etiquetas más frecuentes.
+
+Una práctica habitual es buscar encabezados (`h1`, `h2`, `h3`), ya que suelen contener los títulos principales y secundarios de las noticias.
+
+Podemos usar la función `html_elements()` para seleccionar estas etiquetas dentro del documento.
+
+```{r exploracion - EL}
+# 2. Explorar las etiquetas de encabezado
+html %>% html_elements("h1")
+html %>% html_elements("h2")
+```
+
+Cada comando devuelve un conjunto de nodos HTML que contienen los textos dentro de esas etiquetas.
+Estos nodos aún son objetos HTML, no texto plano, por lo que conviene transformarlos con html_text() para ver el contenido visible.
+
+### Extraer el texto visible de los encabezados
+
+```{r Headers - EL}
+
+html %>%
+html_elements("h1, h2") %>%
+html_text()
+```
+
+La opción `trim = TRUE` elimina espacios en blanco innecesarios al principio o al final de cada texto.
+
+## Limpieza de texto
+
+```{r titulos - EL}
+# 4. Limpieza de texto
+
+titulos <- html %>%
+html_elements("h1, h2") %>%
+html_text(trim = TRUE)
+
+head(titulos, 10)
+
+```
+
+## Comprensión de los selectores
+
+El argumento que usamos dentro de html_elements() —por ejemplo "h1, h2, h3"— se denomina selector CSS (*Cascading Style Sheets*, es decir, hojas en estilo de cascada).
+
+Los selectores indican al paquete `rvest` qué elementos del documento queremos extraer.
+Algunos tipos comunes de selectores son:
+
+
+- "h1", "p", "a" → seleccionan etiquetas por nombre.  
+
+En lenguaje HTML, se suele ver a **`h1`** como el *header* o encabezado principal de una página, es decir, el título de jerarquía 1.  
+A partir de ahí aparecen **`h2`**, **`h3`**, y así sucesivamente, que indican niveles menores de jerarquía dentro del contenido (subtítulos, secciones, apartados, etc.).  
+
+Por su parte, la etiqueta **`p`** se utiliza para definir párrafos de texto (`<p> ... </p>`), mientras que la etiqueta **`a`** proviene de *anchor* (ancla) y se usa para crear **enlaces** dentro del documento (`<a href="...">Texto del enlace</a>`).  
+
+Al trabajar con web scraping, estas etiquetas son los “puntos de entrada” más frecuentes, ya que suelen contener la información visible (títulos, descripciones, vínculos, etc.) que queremos extraer.
+
+- ".nombre_clase" → selecciona todos los elementos con esa clase (class="..." en el HTML).
+
+
+- "#id_elemento" → selecciona un elemento por su identificador único (id="...").
+
+
+- "div > p" → selecciona párrafos que estén dentro de un div.
+
+
+- `"a[href]"` → selecciona solo los enlaces (`<a>`) que tienen atributo `href`.
+
+En HTML, los enlaces están definidos dentro de etiquetas `<a>` mediante el atributo `href`.
+
+Al inspeccionar el código fuente de una página (dentro del navegador: F12, o bien clic derecho → Inspeccionar), podemos observar estas etiquetas y decidir qué selectores usar para extraer la información deseada.
+
+## Extracción de enlaces
+
+Además del texto, también podemos obtener los enlaces (las direcciones a las notas completas).
+En HTML, los enlaces están definidos dentro de etiquetas `<a>` mediante el atributo href.
+
+```{r enlaces - EL}
+enlaces <- html %>%
+html_elements("a") %>%
+html_attr("href")
+
+head(enlaces, 10)
+```
+
+El resultado es un vector con los valores del atributo href de cada enlace.
+En muchos sitios, los enlaces relativos (por ejemplo, "/politica/milei...") deben completarse agregando la raíz del dominio.
+Esto puede hacerse con `paste0("https://www.ellitoral.com", enlace_relativo)`.
+
+## Construcción de una tabla con títulos y enlaces
+
+Podemos combinar los dos vectores (titulos y enlaces) en una tabla para visualizar la información de manera ordenada.
+
+Usamos tibble() o data.frame() para crear un pequeño conjunto de datos.
+
+```{r - EL}
+tibble(
+titulo = titulos[1:10],
+enlace = enlaces[1:10]
+)
+
+```
+
+
+Esta tabla reúne los primeros diez títulos de portada junto con los enlaces asociados.
+
+A partir de aquí podríamos limpiar, analizar texto o incluso automatizar la recolección periódica de titulares.
+
+## Ejemplo de visualización: nube de palabras
+
+Una aplicación sencilla es generar una nube de palabras con los títulos obtenidos, para observar qué temas predominan en la portada.
+
+Convertimos los títulos en un solo texto y los separamos en palabras
+
+```{r, eval = F}
+texto <- tibble(titulo = titulos)
+
+palabras <- texto %>%
+unnest_tokens(word, titulo) %>%
+anti_join(stop_words, by = "word") %>%
+count(word, sort = TRUE)
+
+wordcloud( # nube de palabras
+words = palabras$word,
+freq = palabras$n,
+min.freq = 1,
+colors = jcolors(palette = "pal3")
+)
+```
+
+Este gráfico refleja de manera visual la frecuencia de las palabras más comunes en los titulares extraídos.
+
+## Problemas para rvest en ciertos sitios web
+
+No todos los sitios permiten extraer su contenido con rvest.
+
+Algunos, como en este caso El Litoral cargan sus noticias dinámicamente mediante JavaScript.
+Esto significa que el HTML inicial no contiene los títulos ni los enlaces; el contenido se agrega después de que la página se renderiza en el navegador.
+
+¿Qué significa esto?
+
+Esto implica que rvest solo puede leer el HTML estático que entrega el servidor, pero no el contenido generado dinámicamente.
+
+## Alternativa: Selenium
+
+Selenium (y su interfaz para R, RSelenium) actúa como un navegador automatizado:
+
+1) Abre la página real (como Chrome o Firefox).
+
+2) Ejecuta el JavaScript.
+
+3) Espera a que se carguen los elementos.
+
+4) Luego permite extraer el HTML completo, ya renderizado.
+
+De esta forma, Selenium permite capturar datos que rvest no puede ver porque aún no existen en el documento inicial.
+
+En esta clase no abordaremos Selenium, pero es importante conocer su existencia, ya que muchas páginas modernas requieren este enfoque para obtener información completa.
+
+# Otras páginas web rvest-frindlies
+
+A continuación, un ejemplo de web scraping en Properati, un sitio de avisos clasificados inmobiliarios.
+
+
+```{r}
+
+url <- "https://www.properati.com.ar/s/santa-fe/venta" # Definición de url
+
+html <- rvest::read_html(url)
+
+titulos <- html %>%
+  html_elements("a.title") %>%
+  html_text(trim = TRUE)
+
+# Paso 4: Ver resultados
+head(titulos, 10)
+
+precios <- html %>%
+  html_elements("div.price") %>%
+  html_text(trim = TRUE)
+
+head(precios, 10)
+
+ubicacion <- html %>%
+  html_elements("div.location") %>%
+  html_text(trim = TRUE)
+
+head(ubicacion, 10)
+
+
+```
+
+### Más elementos
+
+```{r mas elementos - P}
+
+area <- html %>%
+  html_elements("span.properties__area") %>%
+  html_text(trim = TRUE)
+
+# Paso 4: Ver resultados
+head(area, 10)
+
+garage <- html %>%
+  html_elements("span.properties__amenity__car_park") %>%
+  html_text(trim = TRUE)
+
+head(garage, 10)
+
+banio <- html %>%
+  html_elements("span.properties__bathrooms") %>%
+  html_text(trim = TRUE)
+
+head(banio, 10)
+
+bedroom <- html %>%
+  html_elements("span.properties__bedrooms") %>%
+  html_text(trim = TRUE)
+
+head(bedroom, 10)
+
+
+```
+
+
+```{r crear tabla - P}
+
+titulos <- html %>%
+  html_elements("a.title") %>%
+  html_text(trim = TRUE)
+
+urls_completas <- html %>%
+  html_elements("a.title") %>%
+  html_attr("href")
+
+propiedades <- data.frame(
+  titulo = titulos,
+  url = urls_completas
+)
+head(propiedades, 10)
+
+
+```
+
+## Más elementos...
+
+```{r más elementos... - P}
+
+# 1. URL base
+url <- "https://www.properati.com.ar/s/santa-fe/venta"
+
+# 2. Leer HTML
+pagina <- httr::GET(url, httr::add_headers(
+  "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+)) %>%
+  httr::content("text", encoding = "UTF-8") %>%
+  read_html()
+
+# 3. Extraer por etiquetas presentes en el HTML estático
+titulos <- pagina %>% html_elements("a.title") %>% html_text(trim = TRUE)
+
+urls <- pagina %>% html_elements("a.title") %>% html_attr("href")
+dormitorios <- pagina %>% html_elements("span[data-test='bedrooms-value']") %>% html_text(trim = TRUE)
+
+banios <- pagina %>% html_elements("span[data-test='full-bathrooms-value']") %>% html_text(trim = TRUE)
+
+area <- pagina %>% html_elements("span.properties__area") %>% html_text(trim = TRUE)
+
+# 4. Crear un data frame vacío
+propiedades_df <- data.frame(
+  titulo = character(),
+  url = character(),
+  dormitorios = character(),
+  banios = character(),
+  area = character(),
+  stringsAsFactors = FALSE
+)
+
+# 5. Llenar fila por fila (si un elemento falta, queda vacío)
+n <- length(titulos)
+for (i in seq_len(n)) {
+  fila <- data.frame(
+    titulo = ifelse(length(titulos) >= i, titulos[i], ""),
+    url = ifelse(length(urls) >= i, urls[i], ""),
+    dormitorios = ifelse(length(dormitorios) >= i, dormitorios[i], ""),
+    banios = ifelse(length(banios) >= i, banios[i], ""),
+    area = ifelse(length(area) >= i, area[i], ""),
+    stringsAsFactors = FALSE
+  )
+  propiedades_df <- rbind(propiedades_df, fila)
+}
+
+# 6. Ver los primeros resultados
+head(propiedades_df, 10)
+```
+
+## Navegando en descripciones
+
+```{r}
+
+u <- propiedades$url[1]
+u
+
+pagina <- read_html(u)
+
+desc <- pagina %>%
+  html_elements("#description-text") %>%  
+  html_text(trim = TRUE)
+
+desc
+
+
+```
+
+### Mejorando lectura de descripciones
+
+
+```{r}
+
+
+pagina <- httr::GET(u, httr::add_headers(
+  "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+)) %>%
+  httr::content("text", encoding = "UTF-8") %>%   # <-- forzamos UTF-8 aquí
+  read_html()
+
+
+desc <- pagina %>%
+  html_element("div#description-text") %>%
+  html_text(trim = TRUE)
+
+
+desc <- iconv(desc, from = "UTF-8", to = "UTF-8")
+
+desc
+
+
+```
+
+### Complejizando el proceso
+
+```{r prefinal boss - EL}
+library(rvest)
+library(httr)
+
+# -----------------------------------------------------------
+# Parámetros
+# -----------------------------------------------------------
+url <- "https://www.properati.com.ar/s/santa-fe/venta"
+limite <- 5   # cantidad de propiedades a extraer
+# -----------------------------------------------------------
+
+# 1. Leer HTML principal
+html <- httr::GET(url, httr::add_headers(
+  "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+)) %>%
+  httr::content("text", encoding = "UTF-8") %>%
+  read_html()
+
+# 2. Identificar los bloques de propiedades
+bloques <- html %>% html_elements("div.snippet__content")
+n_bloques <- length(bloques)
+cat("Bloques detectados:", n_bloques, "\n")
+
+# 3. Crear data frame vacío
+propiedades <- data.frame(
+  titulo = character(),
+  url = character(),
+  precio = character(),
+  ubicacion = character(),
+  dormitorios = character(),
+  banios = character(),
+  area = character(),
+  seguridad = character(),
+  garage = character(),
+  descripcion = character(),
+  stringsAsFactors = FALSE
+)
+
+# 4. Bucle: extracción dentro de cada bloque
+for (i in seq_len(min(limite, n_bloques))) {
+  cat("Procesando propiedad", i, "de", min(limite, n_bloques), "\n")
+  
+  nodo <- bloques[i]
+  
+  # Cada campo busca dentro del bloque, si no existe devuelve NA
+  t <- nodo %>% html_element("a.title") %>% html_text(trim = TRUE)
+  if (length(t) == 0) t <- NA
+  
+  u <- nodo %>% html_element("a.title") %>% html_attr("href")
+  if (length(u) == 0) u <- NA
+  
+  p <- nodo %>% html_element("div.price") %>% html_text(trim = TRUE)
+  if (length(p) == 0) p <- NA
+  
+  loc <- nodo %>% html_element("div.location") %>% html_text(trim = TRUE)
+  if (length(loc) == 0) loc <- NA
+  
+  d <- nodo %>% html_element("span.properties__bedrooms") %>% html_text(trim = TRUE)
+  if (length(d) == 0) d <- NA
+  
+  b <- nodo %>% html_element("span.properties__bathrooms") %>% html_text(trim = TRUE)
+  if (length(b) == 0) b <- NA
+  
+  a <- nodo %>% html_element("span.properties__area") %>% html_text(trim = TRUE)
+  if (length(a) == 0) a <- NA
+  
+  s <- nodo %>% html_element("span.properties__amenity__security") %>% html_text(trim = TRUE)
+  if (length(s) == 0) s <- NA
+  
+  g <- nodo %>% html_element("span.properties__amenity__car_park") %>% html_text(trim = TRUE)
+  if (length(g) == 0) g <- NA
+  
+  # descripción (solo si tiene URL)
+  desc <- NA
+  if (!is.na(u)) {
+    Sys.sleep(runif(1, 2, 5))
+    tryCatch({
+      pagina_detalle <- httr::GET(u, httr::add_headers(
+        "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+      )) %>%
+        httr::content("text", encoding = "UTF-8") %>%
+        read_html()
+      
+      desc <- pagina_detalle %>%
+        html_element("div#description-text") %>%
+        html_text(trim = TRUE)
+      if (length(desc) == 0) desc <- NA
+    }, error = function(e) {
+      desc <<- NA
+    })
+  }
+  
+  # Armar fila
+  fila <- data.frame(
+    titulo = t,
+    url = u,
+    precio = p,
+    ubicacion = loc,
+    dormitorios = d,
+    banios = b,
+    area = a,
+    seguridad = s,
+    garage = g,
+    descripcion = desc,
+    stringsAsFactors = FALSE
+  )
+  
+  propiedades <- rbind(propiedades, fila)
+}
+
+```
+
+## Limpieza del resultado
+
+```{r cleaning - P}
+
+propiedades_limpio <- propiedades %>%
+  mutate(
+    # Precio: eliminar texto, símbolos, espacios, dejar solo número
+    precio = precio %>%
+      str_remove_all("USD") %>%
+      str_remove_all("[^0-9]") %>%
+      na_if("") %>%
+      as.numeric(),
+
+    # Dormitorios: eliminar texto y convertir a número
+    dormitorios = dormitorios %>%
+      str_remove_all("dormitorios?") %>%
+      str_remove_all("[^0-9]") %>%
+      na_if("") %>%
+      as.numeric(),
+
+    # Baños: normalizar decimales, quitar texto, convertir a número
+    banios = banios %>%
+      str_replace_all(",", ".") %>%
+      str_remove_all("baños?") %>%
+      str_remove_all("[^0-9\\.]") %>%
+      na_if("") %>%
+      as.numeric() %>%
+      floor(),
+
+    # Área: quitar "m²", puntos de miles, convertir a número
+    area = area %>%
+      str_remove_all("m²") %>%
+      str_remove_all("\\.") %>%
+      str_trim() %>%
+      na_if("") %>%
+      as.numeric(),
+
+    # Seguridad y garage: estandarizar, si existe poner "Sí", si no NA
+    seguridad = ifelse(!is.na(seguridad) & seguridad != "", "Sí", NA),
+    garage = ifelse(!is.na(garage) & garage != "", "Sí", NA),
+
+    # Ubicación: limpiar espacios redundantes
+    ubicacion = str_squish(ubicacion),
+
+    # Descripción: limpiar saltos de línea y codificación
+    descripcion = descripcion %>%
+      str_replace_all("\n", " ") %>%
+      str_squish()
+  )
+
+```
+
+## ¿Qué más se puede agregar acá? 
+
+```{r final boss - P}
+
+# -----------------------------------------------------------
+# Parámetros
+# -----------------------------------------------------------
+
+base_url <- "https://www.properati.com.ar/s/santa-fe/venta/"
+limite_pag <- 3    # cantidad de páginas a recorrer (PRIMERA VEZ ASIGNAR 1)
+limite <- 30        # cantidad de propiedades por página a traer (PRIMERA VEZ, ASIGNAR 5)
+# -----------------------------------------------------------
+
+# Data frame acumulador
+propiedades <- data.frame(
+  titulo = character(),
+  url = character(),
+  precio = character(),
+  ubicacion = character(),
+  dormitorios = character(),
+  banios = character(),
+  area = character(),
+  seguridad = character(),
+  garage = character(),
+  descripcion = character(),
+  stringsAsFactors = FALSE
+)
+
+# -----------------------------------------------------------
+# Bucle principal sobre páginas
+# -----------------------------------------------------------
+
+for (pagina_num in 1:limite_pag) {
+  
+  url <- paste0(base_url, pagina_num)
+  cat("\n=== Página", pagina_num, ":", url, "===\n")
+  
+  # Leer HTML de la página
+  html <- httr::GET(url, httr::add_headers(
+    "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+  )) %>%
+    httr::content("text", encoding = "UTF-8") %>%
+    read_html()
+  
+  # Identificar bloques de propiedades
+  bloques <- html %>% html_elements("div.snippet__content")
+  n_bloques <- length(bloques)
+  cat("Bloques detectados:", n_bloques, "\n")
+  
+  # Recorrer los bloques de la página actual
+  for (i in seq_len(min(limite, n_bloques))) {
+    cat("Procesando propiedad", i, "de", min(limite, n_bloques), "en página", pagina_num, "\n")
+    
+    nodo <- bloques[i]
+    
+    # Extraer variables (si no existe, NA)
+    t <- nodo %>% html_element("a.title") %>% html_text(trim = TRUE)
+    if (length(t) == 0) t <- NA
+    
+    u <- nodo %>% html_element("a.title") %>% html_attr("href")
+    if (length(u) == 0) u <- NA
+    
+    p <- nodo %>% html_element("div.price") %>% html_text(trim = TRUE)
+    if (length(p) == 0) p <- NA
+    
+    loc <- nodo %>% html_element("div.location") %>% html_text(trim = TRUE)
+    if (length(loc) == 0) loc <- NA
+    
+    d <- nodo %>% html_element("span.properties__bedrooms") %>% html_text(trim = TRUE)
+    if (length(d) == 0) d <- NA
+    
+    b <- nodo %>% html_element("span.properties__bathrooms") %>% html_text(trim = TRUE)
+    if (length(b) == 0) b <- NA
+    
+    a <- nodo %>% html_element("span.properties__area") %>% html_text(trim = TRUE)
+    if (length(a) == 0) a <- NA
+    
+    s <- nodo %>% html_element("span.properties__amenity__security") %>% html_text(trim = TRUE)
+    if (length(s) == 0) s <- NA
+    
+    g <- nodo %>% html_element("span.properties__amenity__car_park") %>% html_text(trim = TRUE)
+    if (length(g) == 0) g <- NA
+    
+    # descripción
+    desc <- NA
+    if (!is.na(u)) {
+      Sys.sleep(runif(1, 2, 5)) # pausa la ejecución del script por x segundos, dado por la función runif (un número aleatorio entre 2 y 5): de 2 a 5 segundos.
+      tryCatch({
+        pagina_detalle <- httr::GET(u, httr::add_headers(
+          "User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36"
+        )) %>% # probar randomización de user-agents:
+          
+#           user_agents <- c(
+#   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+#   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+#   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36",
+#   "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
+# )
+# 
+# # Elegir uno al azar en cada request:
+# ua_random <- sample(user_agents, 1)
+          
+          httr::content("text", encoding = "UTF-8") %>%
+          read_html()
+        
+        desc <- pagina_detalle %>%
+          html_element("div#description-text") %>%
+          html_text(trim = TRUE)
+        if (length(desc) == 0) desc <- NA
+      }, error = function(e) {
+        desc <<- NA
+      })
+    }
+    
+    # Agregar fila
+    fila <- data.frame(
+      titulo = t,
+      url = u,
+      precio = p,
+      ubicacion = loc,
+      dormitorios = d,
+      banios = b,
+      area = a,
+      seguridad = s,
+      garage = g,
+      descripcion = desc,
+      stringsAsFactors = FALSE
+    )
+    
+    propiedades <- rbind(propiedades, fila)
+  }
+}
+
+# -----------------------------------------------------------
+# Limpieza final
+# -----------------------------------------------------------
+
+propiedades_limpio <- propiedades %>%
+  mutate(
+    precio = precio %>% str_remove_all("USD") %>% str_remove_all("[^0-9]") %>% na_if("") %>% as.numeric(),
+    dormitorios = dormitorios %>% str_remove_all("dormitorios?") %>% str_remove_all("[^0-9]") %>% na_if("") %>% as.numeric(),
+    banios = banios %>% str_replace_all(",", ".") %>% str_remove_all("baños?") %>% str_remove_all("[^0-9\\.]") %>% na_if("") %>% as.numeric() %>% floor(),
+    area = area %>% str_remove_all("m²") %>% str_remove_all("\\.") %>% str_trim() %>% na_if("") %>% as.numeric(),
+    seguridad = ifelse(!is.na(seguridad) & seguridad != "", "Sí", NA),
+    garage = ifelse(!is.na(garage) & garage != "", "Sí", NA),
+    ubicacion = str_squish(ubicacion),
+    descripcion = descripcion %>% str_replace_all("\n", " ") %>% str_squish()
+  )
+
+```
+
+## Exportando archivo
+
+```{r export file}
+openxlsx::write.xlsx(propiedades_limpio, "propiedades_properati.xlsx")
+```
+
