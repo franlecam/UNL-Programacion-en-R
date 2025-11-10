@@ -33,7 +33,7 @@ cor_matrix <- cor(vars, use = "complete.obs")
 
 print(round(cor_matrix, 2))
 
-corrplot(cor_matrix, method = "color", 
+corrplot::corrplot(cor_matrix, method = "color", 
          type = "upper", order = "hclust",
          addCoef.col = "black",
          tl.col = "black", tl.srt = 45,
@@ -44,7 +44,20 @@ corrplot(cor_matrix, method = "color",
 
 
 # Relación entre ingreso y prestigio
-modelo_simple <- lm(prestige ~ income, data = Prestige)
+
+library(tidyverse)
+
+Prestige <- Prestige %>%
+  mutate(log_income = log(income),
+         income_1000 = income/1000,
+         log_prestige = log(prestige))
+
+modelo_simple <- lm(log_prestige ~ log_income, Prestige)
+modelo_simple <- lm(prestige ~ income, Prestige)
+
+plot(Prestige$log_income, Prestige$log_prestige)
+class(modelo_simple)
+
 summary(modelo_simple)
 
 # Gráfico del ajuste
@@ -60,6 +73,7 @@ abline(modelo_simple, col = "blue", lwd = 2)
 
 
 # Relación entre ingreso y prestigio
+
 modelo_simple <- lm(prestige ~ women, data = Prestige)
 summary(modelo_simple)
 
@@ -74,8 +88,18 @@ abline(modelo_simple, col = "blue", lwd = 2)
 # 2. REGRESIÓN LINEAL MÚLTIPLE ####
 
 # Agregamos educación y % de mujeres como variables explicativas
-modelo_multiple <- lm(prestige ~ income + education + women, data = Prestige)
+
+Prestige <- Prestige %>%
+  mutate(hombre = 100 - women)
+
+modelo_multiple <- lm(prestige ~ income + education, data = Prestige)
 summary(modelo_multiple)
+
+modelo_multiple <- lm(prestige ~ income_1000, data = Prestige)
+modelo_multiple <- lm(prestige ~ education, data = Prestige)
+
+summary(modelo_multiple)
+
 
 # Interpretación:
 # - Cada coeficiente muestra el efecto parcial de cada variable sobre el prestigio,
@@ -106,7 +130,9 @@ nuevos_datos <- data.frame(
   women = c(30, 40, 50, 60, 70, 80)
 )
 
+?predict
 predicciones <- predict(modelo_multiple, newdata = nuevos_datos, interval = "prediction")
+
 resultados <- cbind(nuevos_datos, predicciones)
 print(resultados)
 
@@ -131,7 +157,7 @@ valores_reales <- c(35, 45, 50, 60, 65, 70)
 # Medimos el error promedio (RMSE)
 
 MSE <- sqrt(mean((valores_reales - resultados$fit)^2))
-cat("RMSE sobre los nuevos casos:", round(RMSE, 2), "\n")
+cat("RMSE sobre los nuevos casos:", round(MSE, 2), "\n")
 
 # Root Mean Square Error o error cuadrático medio
 
