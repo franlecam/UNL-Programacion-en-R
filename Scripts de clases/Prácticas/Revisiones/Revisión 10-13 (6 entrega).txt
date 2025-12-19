@@ -1,2 +1,0 @@
-- Evaluar si los códigos deben o no ser mostrados.
-- No mostrar mensajes o warnings inherentes al código
